@@ -1,0 +1,480 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>꼼꼼이 (KkomKkom) - 부부 공동 육아 기록 & 24시간 타임라인</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Pretendard:wght@400;500;600;700;800&family=Outfit:wght@500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body class="dark-theme">
+  <div id="app" class="app-container">
+    <!-- Top Bar -->
+    <header class="app-header">
+      <div class="header-left">
+        <div class="logo-group">
+          <span class="logo-icon">🍼</span>
+          <div>
+            <h1 class="app-title">꼼꼼이</h1>
+            <span class="app-sub">우리 아기 다이어리</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="header-right">
+        <!-- Active User Profile Switcher -->
+        <div class="active-user-switcher" title="현재 기록자 선택">
+          <span class="switcher-label">기록자:</span>
+          <div class="user-pills">
+            <button type="button" class="user-pill active mom" data-user="엄마" id="selectMomBtn">👩 엄마</button>
+            <button type="button" class="user-pill dad" data-user="아빠" id="selectDadBtn">👨 아빠</button>
+          </div>
+        </div>
+        <button id="themeToggleBtn" class="icon-btn" aria-label="테마 전환" title="야간 다크모드 / 주간 라이트모드">
+          <span class="theme-icon">🌙</span>
+        </button>
+      </div>
+    </header>
+
+    <!-- Sub Header: Pairing Info & Date Nav -->
+    <div class="sub-header-bar">
+      <div class="pairing-badge" title="부부 실시간 연동 상태">
+        <span class="status-dot pulse"></span>
+        <span class="pairing-text">엄마 👩 ⇄ 아빠 👨 실시간 연동 중</span>
+      </div>
+      <div class="who-is-active-tag" id="currentActiveIndicator">
+        현재 조작: <strong class="author-mom">👩 엄마</strong>
+      </div>
+    </div>
+
+    <!-- Date Navigator -->
+    <section class="date-navigator">
+      <button id="prevDayBtn" class="nav-arrow" title="어제">◀</button>
+      <div class="current-date-info">
+        <span id="dateDisplay" class="date-text">2026. 09. 14 (월)</span>
+        <span class="d-day-badge">생후 68일차</span>
+      </div>
+      <button id="nextDayBtn" class="nav-arrow" title="내일">▶</button>
+      <button id="todayBtn" class="today-tag">오늘</button>
+    </section>
+
+    <!-- Baby Current Status Live Banner -->
+    <section class="live-status-banner">
+      <div class="status-avatar">
+        <span class="baby-emoji" id="babyStatusEmoji">😴</span>
+      </div>
+      <div class="status-content">
+        <div class="status-title-row">
+          <span class="status-badge sleep" id="babyStatusBadge">수면 중</span>
+          <span class="status-time" id="babyStatusDuration">1시간 15분째 수면 중</span>
+        </div>
+        <div class="status-detail-row">
+          <span>마지막 수유: <strong>13:20 (분유 140ml)</strong></span>
+          <span class="dot-separator">•</span>
+          <span class="feeding-term-alert" id="feedingTermInfo">수유한 지 2시간 10분 경과</span>
+        </div>
+      </div>
+      <button id="quickSleepToggleBtn" class="quick-status-btn" title="수면 상태 변경">기상 기록 ☀️</button>
+    </section>
+
+    <!-- Daily Shared Handover Note (부부 인수인계 메모) -->
+    <section class="handover-section">
+      <div class="section-header">
+        <div class="section-title-wrap">
+          <span class="section-icon">📌</span>
+          <h3>오늘의 부부 인수인계 메모</h3>
+          <span class="badge-count" id="memoCount">2</span>
+        </div>
+        <button id="addMemoToggleBtn" class="text-btn">+ 새 메모</button>
+      </div>
+
+      <!-- Quick Add Memo Box (Collapsible) -->
+      <div id="memoInputBox" class="memo-input-box hidden">
+        <div class="memo-author-selector">
+          <span class="author-preset-label">작성자:</span>
+          <label><input type="radio" name="memoAuthor" value="엄마" checked> 👩 엄마</label>
+          <label><input type="radio" name="memoAuthor" value="아빠"> 👨 아빠</label>
+          <label class="pin-checkbox"><input type="checkbox" id="memoIsPinned"> ⭐️ 중요 핀 고정</label>
+        </div>
+        <div class="memo-textarea-wrap">
+          <textarea id="memoText" placeholder="다음 교대자가 알아야 할 특이사항이나 아기 컨디션을 남겨주세요 (예: 오후 3시 기침 조금, 비타민D 복용 완료)"></textarea>
+          <button id="submitMemoBtn" class="btn-primary-sm">등록</button>
+        </div>
+      </div>
+
+      <!-- Memo List -->
+      <div id="memoList" class="memo-cards-list">
+        <!-- Dynamically rendered -->
+      </div>
+    </section>
+
+    <!-- Baby Moments (Photos & Videos Gallery Section) -->
+    <section class="moments-section">
+      <div class="section-header">
+        <div class="section-title-wrap">
+          <span class="section-icon">📷</span>
+          <h3>오늘의 사진 & 영상 공유</h3>
+          <span class="badge-count" id="momentsCount">2</span>
+        </div>
+        <button id="openMediaModalBtn" class="text-btn">+ 업로드</button>
+      </div>
+
+      <!-- Horizontal Media Slider -->
+      <div class="moments-slider" id="momentsSlider">
+        <!-- Dynamically rendered media cards -->
+      </div>
+    </section>
+
+    <!-- Dashboard Summary Cards (KPI Cards) -->
+    <section class="dashboard-kpis">
+      <!-- Card 1: Feeding -->
+      <div class="kpi-card feeding-card">
+        <div class="card-header">
+          <span class="card-icon">🍼</span>
+          <span class="card-title">오늘 총 수유량</span>
+          <span class="card-count" id="feedCountBadge">4회</span>
+        </div>
+        <div class="card-body">
+          <div class="main-metric">
+            <span class="metric-val" id="totalFeedAmount">560</span>
+            <span class="metric-unit">ml</span>
+            <span class="metric-target">/ 목표 800ml</span>
+          </div>
+          <div class="progress-bar-wrap">
+            <div class="progress-bar-fill" id="feedProgressBar" style="width: 70%;"></div>
+          </div>
+          <div class="kpi-sub-info">
+            <span>평균 수유 텀: <strong>3시간 15분</strong></span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Card 2: Sleep -->
+      <div class="kpi-card sleep-card">
+        <div class="card-header">
+          <span class="card-icon">💤</span>
+          <span class="card-title">오늘 총 수면</span>
+          <span class="card-count" id="sleepCountBadge">총 2회</span>
+        </div>
+        <div class="card-body">
+          <div class="main-metric">
+            <span class="metric-val" id="totalSleepHours">9</span>
+            <span class="metric-unit">시간</span>
+            <span class="metric-val sub" id="totalSleepMins">45</span>
+            <span class="metric-unit">분</span>
+          </div>
+          <div class="sleep-types-summary">
+            <span class="tag-night">밤잠 8h 30m</span>
+            <span class="tag-nap">낮잠 1h 15m</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Card 3: Diaper -->
+      <div class="kpi-card diaper-card">
+        <div class="card-header">
+          <span class="card-icon">🧷</span>
+          <span class="card-title">기저귀 교체</span>
+          <span class="card-count" id="diaperTotalBadge">총 6회</span>
+        </div>
+        <div class="card-body">
+          <div class="diaper-split-metric">
+            <div class="split-col">
+              <span class="diaper-emoji">💧</span>
+              <span class="diaper-label">소변</span>
+              <span class="diaper-val" id="diaperPeeCount">4</span><span class="unit">회</span>
+            </div>
+            <div class="split-divider"></div>
+            <div class="split-col">
+              <span class="diaper-emoji">💩</span>
+              <span class="diaper-label">대변</span>
+              <span class="diaper-val" id="diaperPooCount">2</span><span class="unit">회</span>
+            </div>
+          </div>
+          <div class="kpi-sub-info text-center">
+            <span class="status-good">배변 상태 양호 (황금변)</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 24-Hour Visual Gantt/Timeline View -->
+    <section class="timeline-container">
+      <div class="timeline-header">
+        <div class="section-title-wrap">
+          <span class="section-icon">🕒</span>
+          <h3>24시간 시간표 타임라인</h3>
+          <span class="timeline-legend-hint">(블록을 탭하면 상세 확인)</span>
+        </div>
+        <div class="timeline-legend">
+          <span class="legend-item"><span class="legend-box sleep"></span> 수면</span>
+          <span class="legend-item"><span class="legend-box feed"></span> 수유</span>
+          <span class="legend-item"><span class="legend-box diaper"></span> 기저귀</span>
+        </div>
+      </div>
+
+      <!-- Gantt Bar: 00:00 to 24:00 (Horizontal Strip) -->
+      <div class="ruler-wrapper">
+        <div class="ruler-labels">
+          <span>00시</span>
+          <span>04시</span>
+          <span>08시</span>
+          <span>12시</span>
+          <span>16시</span>
+          <span>20시</span>
+          <span>24시</span>
+        </div>
+        <div class="ruler-bar" id="ganttBar">
+          <!-- Current Time Indicator -->
+          <div id="currentTimeIndicator" class="current-time-marker" title="현재 시각"></div>
+        </div>
+      </div>
+
+      <!-- Chronological Event Feed List -->
+      <div class="event-feed-section">
+        <div class="event-feed-header">
+          <h4 class="event-feed-title">오늘의 기록 순서</h4>
+          <span class="author-filter-hint">누가 기록했는지 라벨로 확인하세요</span>
+        </div>
+        <div id="eventList" class="event-list">
+          <!-- Dynamically populated events -->
+        </div>
+      </div>
+    </section>
+
+    <!-- Floating Bottom Navigation & Quick Actions -->
+    <nav class="bottom-action-bar">
+      <button class="action-btn feed-btn" id="openFeedModalBtn">
+        <span class="btn-icon">🍼</span>
+        <span class="btn-label">수유</span>
+      </button>
+      <button class="action-btn sleep-btn" id="openSleepModalBtn">
+        <span class="btn-icon">💤</span>
+        <span class="btn-label">수면</span>
+      </button>
+      <button class="action-btn diaper-btn" id="openDiaperModalBtn">
+        <span class="btn-icon">🧷</span>
+        <span class="btn-label">기저귀</span>
+      </button>
+      <button class="action-btn media-btn" id="openMediaQuickBtn">
+        <span class="btn-icon">📷</span>
+        <span class="btn-label">사진/영상</span>
+      </button>
+      <button class="action-btn memo-btn" id="openMemoModalBtn">
+        <span class="btn-icon">📝</span>
+        <span class="btn-label">메모</span>
+      </button>
+    </nav>
+
+    <!-- MODALS -->
+
+    <!-- 1. Feeding Modal -->
+    <div id="feedModal" class="modal-backdrop hidden">
+      <div class="modal-card">
+        <div class="modal-header">
+          <h3>🍼 수유 기록하기</h3>
+          <button class="close-modal-btn">&times;</button>
+        </div>
+        <form id="feedForm" class="modal-form">
+          <div class="segmented-control">
+            <button type="button" class="segment-btn active" data-type="분유">분유</button>
+            <button type="button" class="segment-btn" data-type="모유">모유</button>
+            <button type="button" class="segment-btn" data-type="유축">유축</button>
+            <button type="button" class="segment-btn" data-type="이유식">이유식</button>
+          </div>
+
+          <div id="formulaAmountSection" class="form-group">
+            <label class="form-label">수유량 (ml)</label>
+            <div class="amount-input-row">
+              <button type="button" class="qty-btn" data-delta="-10">-10</button>
+              <input type="number" id="feedAmountInput" value="140" min="10" max="350" step="10" class="num-input">
+              <button type="button" class="qty-btn" data-delta="10">+10</button>
+            </div>
+            <div class="preset-buttons">
+              <button type="button" class="preset-pill" data-amount="80">80ml</button>
+              <button type="button" class="preset-pill" data-amount="120">120ml</button>
+              <button type="button" class="preset-pill active" data-amount="140">140ml</button>
+              <button type="button" class="preset-pill" data-amount="160">160ml</button>
+              <button type="button" class="preset-pill" data-amount="180">180ml</button>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">먹은 시간</label>
+            <input type="time" id="feedTimeInput" class="time-input" required>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">기록자 (누가 먹였나요?)</label>
+            <div class="author-toggle">
+              <label><input type="radio" name="feedRecorder" value="엄마" checked> <span class="author-tag mom">👩 엄마</span></label>
+              <label><input type="radio" name="feedRecorder" value="아빠"> <span class="author-tag dad">👨 아빠</span></label>
+            </div>
+          </div>
+
+          <div class="modal-footer">
+            <button type="button" class="btn-cancel close-modal-btn">취소</button>
+            <button type="submit" class="btn-confirm">저장하기</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- 2. Sleep Modal -->
+    <div id="sleepModal" class="modal-backdrop hidden">
+      <div class="modal-card">
+        <div class="modal-header">
+          <h3>💤 수면 기록하기</h3>
+          <button class="close-modal-btn">&times;</button>
+        </div>
+        <form id="sleepForm" class="modal-form">
+          <div class="segmented-control">
+            <button type="button" class="segment-btn active" data-sleeptype="nap">낮잠</button>
+            <button type="button" class="segment-btn" data-sleeptype="night">밤잠</button>
+          </div>
+
+          <div class="time-range-group">
+            <div class="form-group">
+              <label class="form-label">잠든 시간</label>
+              <input type="time" id="sleepStartTime" class="time-input" required>
+            </div>
+            <div class="form-group">
+              <label class="form-label">일어난 시간</label>
+              <input type="time" id="sleepEndTime" class="time-input" required>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">기록자 (누가 재웠나요?)</label>
+            <div class="author-toggle">
+              <label><input type="radio" name="sleepRecorder" value="엄마" checked> <span class="author-tag mom">👩 엄마</span></label>
+              <label><input type="radio" name="sleepRecorder" value="아빠"> <span class="author-tag dad">👨 아빠</span></label>
+            </div>
+          </div>
+
+          <div class="modal-footer">
+            <button type="button" class="btn-cancel close-modal-btn">취소</button>
+            <button type="submit" class="btn-confirm">저장하기</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- 3. Diaper Modal -->
+    <div id="diaperModal" class="modal-backdrop hidden">
+      <div class="modal-card">
+        <div class="modal-header">
+          <h3>🧷 기저귀 기록하기</h3>
+          <button class="close-modal-btn">&times;</button>
+        </div>
+        <form id="diaperForm" class="modal-form">
+          <div class="diaper-type-selector">
+            <button type="button" class="diaper-choice-btn active" data-diapertype="pee">
+              <span class="icon">💧</span>
+              <span class="txt">소변만</span>
+            </button>
+            <button type="button" class="diaper-choice-btn" data-diapertype="poo">
+              <span class="icon">💩</span>
+              <span class="txt">대변만</span>
+            </button>
+            <button type="button" class="diaper-choice-btn" data-diapertype="both">
+              <span class="icon">💧+💩</span>
+              <span class="txt">소변+대변</span>
+            </button>
+          </div>
+
+          <div id="pooDetailSection" class="poo-detail-section hidden">
+            <label class="form-label">대변 상태 & 색상</label>
+            <div class="detail-chips">
+              <span class="chip active" data-color="황금">황금색</span>
+              <span class="chip" data-color="녹변">녹변</span>
+              <span class="chip" data-color="갈색">갈색</span>
+              <span class="chip" data-color="흑변">흑변(주의)</span>
+            </div>
+            <div class="detail-chips" style="margin-top: 8px;">
+              <span class="chip active" data-state="보통">보통변</span>
+              <span class="chip" data-state="묽음">묽은변</span>
+              <span class="chip" data-state="딱딱">딱딱함</span>
+            </div>
+          </div>
+
+          <div class="form-group" style="margin-top: 14px;">
+            <label class="form-label">교체 시간</label>
+            <input type="time" id="diaperTimeInput" class="time-input" required>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">기록자 (누가 갈았나요?)</label>
+            <div class="author-toggle">
+              <label><input type="radio" name="diaperRecorder" value="엄마" checked> <span class="author-tag mom">👩 엄마</span></label>
+              <label><input type="radio" name="diaperRecorder" value="아빠"> <span class="author-tag dad">👨 아빠</span></label>
+            </div>
+          </div>
+
+          <div class="modal-footer">
+            <button type="button" class="btn-cancel close-modal-btn">취소</button>
+            <button type="submit" class="btn-confirm">저장하기</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- 4. Photo & Video Upload Modal -->
+    <div id="mediaModal" class="modal-backdrop hidden">
+      <div class="modal-card">
+        <div class="modal-header">
+          <h3>📷 사진 & 영상 공유하기</h3>
+          <button class="close-modal-btn">&times;</button>
+        </div>
+        <form id="mediaForm" class="modal-form">
+          <div class="form-group">
+            <label class="form-label">파일 선택 (사진 또는 동영상)</label>
+            <div class="file-upload-zone" id="dropZone">
+              <input type="file" id="mediaFileInput" accept="image/*,video/*" class="file-hidden-input">
+              <div class="upload-prompt" id="uploadPrompt">
+                <span class="upload-icon">📸</span>
+                <span class="upload-text">사진/동영상을 터치해 선택하세요</span>
+                <span class="upload-sub">카메라 촬영 또는 갤러리 선택</span>
+              </div>
+              <div id="mediaPreviewContainer" class="media-preview-container hidden">
+                <!-- Preview image or video will appear here -->
+              </div>
+            </div>
+            <!-- Quick Preset Samples (Demo Helper) -->
+            <div class="preset-samples-row">
+              <span class="samples-label">샘플 추가:</span>
+              <button type="button" class="btn-sample" id="sampleBabySmileBtn">👶 방긋 웃는 아기</button>
+              <button type="button" class="btn-sample" id="sampleSleepingBtn">😴 천사 낮잠</button>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">남기고 싶은 말 (캡션)</label>
+            <input type="text" id="mediaCaptionInput" class="text-input" placeholder="예: 맘마 먹고 옹알이 중! / 오늘 배변 상태예요">
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">올린 사람</label>
+            <div class="author-toggle">
+              <label><input type="radio" name="mediaRecorder" value="엄마" checked> <span class="author-tag mom">👩 엄마</span></label>
+              <label><input type="radio" name="mediaRecorder" value="아빠"> <span class="author-tag dad">👨 아빠</span></label>
+            </div>
+          </div>
+
+          <div class="modal-footer">
+            <button type="button" class="btn-cancel close-modal-btn">취소</button>
+            <button type="submit" class="btn-confirm">공유하기</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- Toast Notification -->
+    <div id="toast" class="toast hidden">기록이 추가되었습니다!</div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
