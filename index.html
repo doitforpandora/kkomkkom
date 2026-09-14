@@ -10,43 +10,118 @@
   <link rel="stylesheet" href="style.css">
 </head>
 <body class="dark-theme">
-  <!-- PIN Code Security Lock Screen Overlay -->
-  <div id="lockScreen" class="lock-screen-overlay">
-    <div class="lock-card">
-      <div class="lock-icon-wrap">
-        <span class="lock-icon">🔒</span>
-        <span class="lock-baby-icon">🍼</span>
-      </div>
-      <h2 class="lock-title">꼼꼼이 가족 전용 공간</h2>
-      <p class="lock-desc">부부 전용 비밀코드 4자리를 입력하세요</p>
-
-      <!-- 4 PIN Dots Indicator -->
-      <div class="pin-dots-row" id="pinDotsRow">
-        <span class="pin-dot"></span>
-        <span class="pin-dot"></span>
-        <span class="pin-dot"></span>
-        <span class="pin-dot"></span>
+  <!-- Authentication & Login Screen Overlay -->
+  <div id="authScreen" class="auth-screen-overlay">
+    <div class="auth-card">
+      <div class="auth-header">
+        <div class="auth-logo-badge">🍼</div>
+        <h2 class="auth-title">꼼꼼이</h2>
+        <p class="auth-subtitle">부부 공동 육아 기록 플랫폼</p>
       </div>
 
-      <div id="lockErrorMessage" class="lock-error-msg hidden">비밀코드가 일치하지 않습니다. 다시 입력해주세요.</div>
-
-      <!-- Virtual Keypad -->
-      <div class="keypad-grid">
-        <button type="button" class="keypad-btn" data-key="1">1</button>
-        <button type="button" class="keypad-btn" data-key="2">2</button>
-        <button type="button" class="keypad-btn" data-key="3">3</button>
-        <button type="button" class="keypad-btn" data-key="4">4</button>
-        <button type="button" class="keypad-btn" data-key="5">5</button>
-        <button type="button" class="keypad-btn" data-key="6">6</button>
-        <button type="button" class="keypad-btn" data-key="7">7</button>
-        <button type="button" class="keypad-btn" data-key="8">8</button>
-        <button type="button" class="keypad-btn" data-key="9">9</button>
-        <button type="button" class="keypad-btn action" id="clearPinBtn">C</button>
-        <button type="button" class="keypad-btn" data-key="0">0</button>
-        <button type="button" class="keypad-btn action" id="deletePinBtn">⌫</button>
+      <!-- Quick One-Touch Login for Couple -->
+      <div class="quick-login-section">
+        <span class="quick-login-label">⚡ 빠른 원터치 로그인</span>
+        <div class="quick-user-buttons">
+          <button type="button" class="btn-quick-login mom" id="quickLoginMomBtn">
+            <span class="avatar">👩</span>
+            <div class="btn-info">
+              <span class="role">엄마로 시작하기</span>
+              <span class="sub">mom@kkom.com</span>
+            </div>
+            <span class="arrow">➔</span>
+          </button>
+          <button type="button" class="btn-quick-login dad" id="quickLoginDadBtn">
+            <span class="avatar">👨</span>
+            <div class="btn-info">
+              <span class="role">아빠로 시작하기</span>
+              <span class="sub">dad@kkom.com</span>
+            </div>
+            <span class="arrow">➔</span>
+          </button>
+        </div>
       </div>
 
-      <p class="lock-hint">💡 힌트: 부부 전용 코드 (기본: 1212)</p>
+      <!-- Auth Tabs: Login / Register / PIN -->
+      <div class="segmented-control auth-tabs">
+        <button type="button" class="segment-btn active" data-authtab="loginTab">로그인</button>
+        <button type="button" class="segment-btn" data-authtab="registerTab">회원가입</button>
+        <button type="button" class="segment-btn" data-authtab="pinTab">간편 PIN</button>
+      </div>
+
+      <!-- 1. Email Login Form -->
+      <div id="loginTab" class="auth-tab-content">
+        <form id="emailLoginForm" class="auth-form">
+          <div class="form-group">
+            <label class="form-label">이메일 계정</label>
+            <input type="email" id="loginEmail" class="text-input" placeholder="example@email.com" value="mom@kkom.com" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label">비밀번호</label>
+            <input type="password" id="loginPassword" class="text-input" placeholder="비밀번호 입력" value="1234" required>
+          </div>
+          <button type="submit" class="btn-confirm auth-submit-btn">로그인</button>
+        </form>
+      </div>
+
+      <!-- 2. Register Form -->
+      <div id="registerTab" class="auth-tab-content hidden">
+        <form id="registerForm" class="auth-form">
+          <div class="form-group">
+            <label class="form-label">이메일</label>
+            <input type="email" id="regEmail" class="text-input" placeholder="사용할 이메일" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label">비밀번호</label>
+            <input type="password" id="regPassword" class="text-input" placeholder="4자리 이상" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label">내 역할</label>
+            <div class="author-toggle">
+              <label><input type="radio" name="regRole" value="엄마" checked> <span class="author-tag mom">👩 엄마</span></label>
+              <label><input type="radio" name="regRole" value="아빠"> <span class="author-tag dad">👨 아빠</span></label>
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="form-label">부부 가족 초대 코드</label>
+            <input type="text" id="regCoupleCode" class="text-input" value="KKOM-7788" placeholder="초대 코드 입력 또는 생성">
+          </div>
+          <button type="submit" class="btn-confirm auth-submit-btn">가족 가입 완료</button>
+        </form>
+      </div>
+
+      <!-- 3. Quick PIN Unlock Tab -->
+      <div id="pinTab" class="auth-tab-content hidden">
+        <div class="pin-unlock-box">
+          <p class="pin-guide-text">기존 설정된 4자리 PIN 코드로 즉시 잠금 해제합니다.</p>
+          <div class="pin-dots-row" id="pinDotsRow">
+            <span class="pin-dot"></span>
+            <span class="pin-dot"></span>
+            <span class="pin-dot"></span>
+            <span class="pin-dot"></span>
+          </div>
+          <div id="lockErrorMessage" class="lock-error-msg hidden">비밀코드가 일치하지 않습니다.</div>
+          <div class="keypad-grid">
+            <button type="button" class="keypad-btn" data-key="1">1</button>
+            <button type="button" class="keypad-btn" data-key="2">2</button>
+            <button type="button" class="keypad-btn" data-key="3">3</button>
+            <button type="button" class="keypad-btn" data-key="4">4</button>
+            <button type="button" class="keypad-btn" data-key="5">5</button>
+            <button type="button" class="keypad-btn" data-key="6">6</button>
+            <button type="button" class="keypad-btn" data-key="7">7</button>
+            <button type="button" class="keypad-btn" data-key="8">8</button>
+            <button type="button" class="keypad-btn" data-key="9">9</button>
+            <button type="button" class="keypad-btn action" id="clearPinBtn">C</button>
+            <button type="button" class="keypad-btn" data-key="0">0</button>
+            <button type="button" class="keypad-btn action" id="deletePinBtn">⌫</button>
+          </div>
+          <p class="lock-hint">💡 기본 핀코드: 1212</p>
+        </div>
+      </div>
+
+      <div class="auth-footer-notice">
+        <span>🔒 암호화된 부부 전용 보안 채널</span>
+      </div>
     </div>
   </div>
 
@@ -75,8 +150,8 @@
         <button id="settingsBtn" class="icon-btn" aria-label="환경설정" title="아기 정보 및 건강지표 설정">
           <span>⚙️</span>
         </button>
-        <button id="lockAppBtn" class="icon-btn" aria-label="잠금" title="페이지 잠그기">
-          <span>🔒</span>
+        <button id="logoutBtn" class="icon-btn" aria-label="로그아웃" title="로그아웃 / 잠금">
+          <span>🚪</span>
         </button>
         <button id="themeToggleBtn" class="icon-btn" aria-label="테마 전환" title="야간 다크모드 / 주간 라이트모드">
           <span class="theme-icon">🌙</span>

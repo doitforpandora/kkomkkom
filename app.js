@@ -979,14 +979,93 @@ themeBtn.addEventListener('click', () => {
   showToast(isDark ? '🌙 야간 다크모드 적용' : '☀️ 주간 라이트모드 적용');
 });
 
-// Security Lock Screen (PIN: 1212)
-const PASSCODE = '1212';
-let enteredPin = '';
-const lockScreen = document.getElementById('lockScreen');
+// 11. Authentication & Login System
+const authScreen = document.getElementById('authScreen');
 const pinDots = document.querySelectorAll('#pinDotsRow .pin-dot');
 const lockErrorMsg = document.getElementById('lockErrorMessage');
-const lockCard = document.querySelector('.lock-card');
+let enteredPin = '';
 
+function setAuthenticatedUser(user) {
+  appState.currentUser = user;
+  sessionStorage.setItem('kkomkkom_authenticated_user', JSON.stringify(user));
+  setActiveUser(user.role || '엄마');
+  authScreen.classList.add('unlocked');
+  showToast(`🍼 ${user.role} 님으로 로그인되었습니다! (${user.email})`);
+}
+
+function logout() {
+  appState.currentUser = null;
+  sessionStorage.removeItem('kkomkkom_authenticated_user');
+  authScreen.classList.remove('unlocked');
+  clearPin();
+  showToast('👋 로그아웃되었습니다.');
+}
+
+// Quick One-Touch Login Buttons
+const quickLoginMomBtn = document.getElementById('quickLoginMomBtn');
+const quickLoginDadBtn = document.getElementById('quickLoginDadBtn');
+
+if (quickLoginMomBtn) {
+  quickLoginMomBtn.addEventListener('click', () => {
+    setAuthenticatedUser({ email: 'mom@kkom.com', role: '엄마', coupleCode: 'KKOM-7788' });
+  });
+}
+
+if (quickLoginDadBtn) {
+  quickLoginDadBtn.addEventListener('click', () => {
+    setAuthenticatedUser({ email: 'dad@kkom.com', role: '아빠', coupleCode: 'KKOM-7788' });
+  });
+}
+
+// Auth Tabs Navigation
+document.querySelectorAll('.auth-tabs .segment-btn').forEach(tabBtn => {
+  tabBtn.addEventListener('click', () => {
+    document.querySelectorAll('.auth-tabs .segment-btn').forEach(b => b.classList.remove('active'));
+    tabBtn.classList.add('active');
+
+    const targetTabId = tabBtn.dataset.authtab;
+    document.querySelectorAll('.auth-tab-content').forEach(pane => {
+      pane.classList.toggle('hidden', pane.id !== targetTabId);
+    });
+  });
+});
+
+// Email Login Form Submit
+const emailLoginForm = document.getElementById('emailLoginForm');
+if (emailLoginForm) {
+  emailLoginForm.addEventListener('submit', (e) => {
+    e.preventDefault();
+    const email = document.getElementById('loginEmail').value.trim();
+    const password = document.getElementById('loginPassword').value.trim();
+
+    // Determine role by email or default
+    const role = email.includes('dad') || email.includes('papa') ? '아빠' : '엄마';
+    setAuthenticatedUser({ email: email, role: role, coupleCode: 'KKOM-7788' });
+  });
+}
+
+// Register Form Submit
+const registerForm = document.getElementById('registerForm');
+if (registerForm) {
+  registerForm.addEventListener('submit', (e) => {
+    e.preventDefault();
+    const email = document.getElementById('regEmail').value.trim();
+    const role = document.querySelector('input[name="regRole"]:checked').value;
+    const coupleCode = document.getElementById('regCoupleCode').value.trim() || 'KKOM-7788';
+
+    setAuthenticatedUser({ email: email, role: role, coupleCode: coupleCode });
+  });
+}
+
+// Logout Button in Header
+const logoutBtn = document.getElementById('logoutBtn');
+if (logoutBtn) {
+  logoutBtn.addEventListener('click', () => {
+    logout();
+  });
+}
+
+// Quick PIN Tab Support
 function updatePinDots() {
   pinDots.forEach((dot, idx) => {
     if (idx < enteredPin.length) {
@@ -1001,7 +1080,7 @@ function handleKeyInput(num) {
   if (enteredPin.length >= 4) return;
   enteredPin += num;
   updatePinDots();
-  lockErrorMsg.classList.add('hidden');
+  if (lockErrorMsg) lockErrorMsg.classList.add('hidden');
 
   if (enteredPin.length === 4) {
     validatePin();
@@ -1011,21 +1090,21 @@ function handleKeyInput(num) {
 function validatePin() {
   const currentPass = (appState.babyProfile && appState.babyProfile.passcode) || '1212';
   if (enteredPin === currentPass) {
-    // Success
-    lockScreen.classList.add('unlocked');
-    sessionStorage.setItem('kkomkkom_authenticated', 'true');
-    showToast('🍼 꼼꼼이 가족 공간에 오신 것을 환영합니다!');
+    // PIN Login Success
+    setAuthenticatedUser({ email: 'mom@kkom.com', role: '엄마', coupleCode: 'KKOM-7788' });
     enteredPin = '';
     updatePinDots();
   } else {
-    // Error Shake
-    lockErrorMsg.classList.remove('hidden');
-    lockCard.classList.add('shake');
-    setTimeout(() => {
-      lockCard.classList.remove('shake');
-      enteredPin = '';
-      updatePinDots();
-    }, 500);
+    if (lockErrorMsg) lockErrorMsg.classList.remove('hidden');
+    const pinBox = document.querySelector('.pin-unlock-box');
+    if (pinBox) {
+      pinBox.style.animation = 'shake 0.4s ease-in-out';
+      setTimeout(() => {
+        pinBox.style.animation = '';
+        enteredPin = '';
+        updatePinDots();
+      }, 500);
+    }
   }
 }
 
@@ -1039,20 +1118,21 @@ function deleteLastPin() {
 function clearPin() {
   enteredPin = '';
   updatePinDots();
-  lockErrorMsg.classList.add('hidden');
+  if (lockErrorMsg) lockErrorMsg.classList.add('hidden');
 }
 
-// Keypad Event Listeners
 document.querySelectorAll('.keypad-btn[data-key]').forEach(btn => {
   btn.addEventListener('click', () => handleKeyInput(btn.dataset.key));
 });
 
-document.getElementById('deletePinBtn').addEventListener('click', deleteLastPin);
-document.getElementById('clearPinBtn').addEventListener('click', clearPin);
+const delPinBtn = document.getElementById('deletePinBtn');
+if (delPinBtn) delPinBtn.addEventListener('click', deleteLastPin);
 
-// Keyboard Support
+const clrPinBtn = document.getElementById('clearPinBtn');
+if (clrPinBtn) clrPinBtn.addEventListener('click', clearPin);
+
 window.addEventListener('keydown', (e) => {
-  if (lockScreen.classList.contains('unlocked')) return;
+  if (authScreen.classList.contains('unlocked')) return;
   if (e.key >= '0' && e.key <= '9') {
     handleKeyInput(e.key);
   } else if (e.key === 'Backspace') {
@@ -1062,13 +1142,6 @@ window.addEventListener('keydown', (e) => {
   }
 });
 
-// Re-lock Button in Header
-document.getElementById('lockAppBtn').addEventListener('click', () => {
-  sessionStorage.removeItem('kkomkkom_authenticated');
-  lockScreen.classList.remove('unlocked');
-  clearPin();
-  showToast('🔒 화면이 잠겼습니다.');
-});
 
 // 12. Baby Profile & D-Day / Birth Calculator
 function updateBabyProfileUI() {
@@ -1379,11 +1452,18 @@ window.addEventListener('DOMContentLoaded', () => {
   refreshAll();
 
   // Check Session Authentication
-  const isAuth = sessionStorage.getItem('kkomkkom_authenticated');
-  if (isAuth === 'true') {
-    lockScreen.classList.add('unlocked');
+  const savedUser = sessionStorage.getItem('kkomkkom_authenticated_user');
+  if (savedUser) {
+    try {
+      const user = JSON.parse(savedUser);
+      appState.currentUser = user;
+      setActiveUser(user.role || '엄마');
+      authScreen.classList.add('unlocked');
+    } catch (e) {
+      authScreen.classList.remove('unlocked');
+    }
   } else {
-    lockScreen.classList.remove('unlocked');
+    authScreen.classList.remove('unlocked');
   }
 });
 
