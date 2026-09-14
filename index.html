@@ -8,6 +8,8 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Pretendard:wght@400;500;600;700;800&family=Outfit:wght@500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="style.css">
+  <!-- Supabase JS Client SDK -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body class="dark-theme">
   <!-- Authentication & Login Screen Overlay -->
@@ -18,6 +20,18 @@
         <h2 class="auth-title">꼼꼼이</h2>
         <p class="auth-subtitle">부부 공동 육아 기록 플랫폼</p>
       </div>
+
+      <!-- Supabase Connection Status Bar -->
+      <div class="supabase-status-bar" id="authSupabaseBar">
+        <div class="supabase-status-info">
+          <span class="status-indicator-dot disconnected" id="authSupabaseDot"></span>
+          <span class="status-text-label" id="authSupabaseLabel">Supabase 미연결 (로컬 데모 모드)</span>
+        </div>
+        <button type="button" class="btn-supabase-setup-pill" id="openSupabaseQuickModalBtn">⚡ 연동 설정</button>
+      </div>
+
+      <!-- Inline Auth Message Box -->
+      <div id="authAlertBox" class="auth-alert-box hidden"></div>
 
       <!-- Quick One-Touch Login for Couple -->
       <div class="quick-login-section">
@@ -614,6 +628,7 @@
           <button type="button" class="segment-btn active" data-tab="babyInfoTab">👶 아기 정보</button>
           <button type="button" class="segment-btn" data-tab="healthGuideTab">🩺 기준 건강지표</button>
           <button type="button" class="segment-btn" data-tab="securityTab">🔐 비밀코드</button>
+          <button type="button" class="segment-btn" data-tab="supabaseTab">⚡ Supabase 연동</button>
         </div>
 
         <!-- Tab 1: Baby Info & Due Date -->
@@ -714,6 +729,85 @@
           </form>
         </div>
 
+        <!-- Tab 4: Supabase Cloud Integration -->
+        <div id="supabaseTab" class="settings-tab-pane hidden">
+          <div class="supabase-setup-container">
+            <div class="supabase-header-card">
+              <div class="supabase-title-row">
+                <span class="supabase-icon-badge">⚡</span>
+                <div>
+                  <h4 class="supabase-heading">Supabase 데이터베이스 & 계정 연동</h4>
+                  <p class="supabase-desc">엄마와 아빠 계정으로 안전하게 로그인하고 실시간 동기화를 시작합니다.</p>
+                </div>
+              </div>
+              <div class="supabase-live-status" id="settingsSupabaseStatus">
+                <span class="status-indicator-dot disconnected" id="settingsSupabaseDot"></span>
+                <span class="status-badge-text" id="settingsSupabaseBadgeText">연결되지 않음</span>
+              </div>
+            </div>
+
+            <form id="settingsSupabaseForm" class="modal-form">
+              <div class="form-group">
+                <label class="form-label">Supabase Project URL</label>
+                <input type="url" id="settingsSupabaseUrl" class="text-input" placeholder="https://xxxxxx.supabase.co" autocomplete="off" required>
+                <span class="field-hint">예: https://abcdefghijklmno.supabase.co</span>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Project API Key (anon public)</label>
+                <input type="text" id="settingsSupabaseKey" class="text-input" placeholder="eyJhbGciOiJIUzI1NiIsIn..." autocomplete="off" required>
+                <span class="field-hint">Supabase 대시보드에서 발급받은 공개 anon 키를 입력하세요.</span>
+              </div>
+
+              <!-- Help Guide Card -->
+              <div class="supabase-guide-box">
+                <div class="guide-box-title">📖 Supabase에서 키 복사하는 초간단 방법</div>
+                <ol class="guide-box-list">
+                  <li><a href="https://supabase.com/dashboard" target="_blank" class="supabase-link">supabase.com/dashboard ↗</a> 로그인 후 아기 프로젝트 선택</li>
+                  <li>좌측 사이드바 맨 아래 <strong>⚙️ Project Settings</strong> 클릭</li>
+                  <li><strong>API</strong> 메뉴 선택</li>
+                  <li><strong>Project URL</strong>과 <strong>Project API Keys</strong>의 <code>anon</code> <code>public</code> 키를 복사해 붙여넣으시면 완료!</li>
+                </ol>
+              </div>
+
+              <div class="modal-footer-split">
+                <button type="button" id="settingsSupabaseDisconnectBtn" class="btn-danger-outline">연결 해제 (로컬 모드)</button>
+                <button type="submit" id="settingsSupabaseSaveBtn" class="btn-confirm">연결 저장 및 테스트 ⚡</button>
+              </div>
+            </form>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- 5-1. Dedicated Quick Supabase Config Modal (Accessible anytime from Login screen or settings) -->
+    <div id="supabaseQuickModal" class="modal-backdrop hidden">
+      <div class="modal-card">
+        <div class="modal-header">
+          <h3>⚡ Supabase 연동 설정</h3>
+          <button class="close-modal-btn" id="closeSupabaseQuickModalBtn">&times;</button>
+        </div>
+        <div class="supabase-quick-content">
+          <p class="supabase-quick-intro">
+            가입하신 Supabase 프로젝트의 <strong>Project URL</strong>과 <strong>anon public API Key</strong>를 입력하시면, 실제 Supabase Auth 계정으로 로그인/회원가입이 작동합니다.
+          </p>
+
+          <form id="quickSupabaseForm" class="modal-form">
+            <div class="form-group">
+              <label class="form-label">Project URL (프로젝트 URL)</label>
+              <input type="url" id="quickSupabaseUrl" class="text-input" placeholder="https://xxxxxx.supabase.co" autocomplete="off" required>
+            </div>
+            <div class="form-group">
+              <label class="form-label">anon public Key (공개 API 키)</label>
+              <input type="text" id="quickSupabaseKey" class="text-input" placeholder="eyJhbGciOiJIUzI1Ni..." autocomplete="off" required>
+            </div>
+            <div id="quickSupabaseFeedback" class="supabase-feedback-box hidden"></div>
+            <div class="modal-footer-split">
+              <button type="button" id="quickSupabaseClearBtn" class="btn-cancel">초기화</button>
+              <button type="submit" class="btn-confirm" id="quickSupabaseSubmitBtn">연결 및 저장 ⚡</button>
+            </div>
+          </form>
+        </div>
       </div>
     </div>
 

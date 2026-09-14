@@ -979,21 +979,151 @@ themeBtn.addEventListener('click', () => {
   showToast(isDark ? '🌙 야간 다크모드 적용' : '☀️ 주간 라이트모드 적용');
 });
 
-// 11. Authentication & Login System
+// 11. Supabase Client & Authentication System
 const authScreen = document.getElementById('authScreen');
 const pinDots = document.querySelectorAll('#pinDotsRow .pin-dot');
 const lockErrorMsg = document.getElementById('lockErrorMessage');
 let enteredPin = '';
 
-function setAuthenticatedUser(user) {
+// Supabase Local Storage Keys
+const SUPABASE_STORAGE_URL_KEY = 'kkomkkom_supabase_url';
+const SUPABASE_STORAGE_KEY_KEY = 'kkomkkom_supabase_anon_key';
+
+let supabaseClient = null;
+
+// Initialize Supabase Client
+function initSupabase() {
+  const url = localStorage.getItem(SUPABASE_STORAGE_URL_KEY) || '';
+  const key = localStorage.getItem(SUPABASE_STORAGE_KEY_KEY) || '';
+
+  if (url && key && window.supabase && window.supabase.createClient) {
+    try {
+      supabaseClient = window.supabase.createClient(url, key, {
+        auth: {
+          persistSession: true,
+          autoRefreshToken: true,
+          detectSessionInUrl: true
+        }
+      });
+
+      // Listen to Supabase Auth State Changes
+      supabaseClient.auth.onAuthStateChange((event, session) => {
+        if (event === 'SIGNED_IN' && session && session.user) {
+          const userMeta = session.user.user_metadata || {};
+          const role = userMeta.role || (session.user.email.includes('dad') ? '아빠' : '엄마');
+          const coupleCode = userMeta.coupleCode || 'KKOM-7788';
+          setAuthenticatedUser({
+            email: session.user.email,
+            role: role,
+            coupleCode: coupleCode,
+            id: session.user.id,
+            provider: 'supabase'
+          }, false);
+        } else if (event === 'SIGNED_OUT') {
+          if (appState.currentUser && appState.currentUser.provider === 'supabase') {
+            logout(false);
+          }
+        }
+      });
+
+      updateSupabaseStatusUI(true, url);
+      return true;
+    } catch (e) {
+      console.warn('Supabase initialization error:', e);
+      supabaseClient = null;
+      updateSupabaseStatusUI(false);
+      return false;
+    }
+  } else {
+    supabaseClient = null;
+    updateSupabaseStatusUI(false);
+    return false;
+  }
+}
+
+// Update Supabase Status Badges and Labels
+function updateSupabaseStatusUI(isConnected, url = '') {
+  const authDot = document.getElementById('authSupabaseDot');
+  const authLabel = document.getElementById('authSupabaseLabel');
+  const settingsDot = document.getElementById('settingsSupabaseDot');
+  const settingsBadgeText = document.getElementById('settingsSupabaseBadgeText');
+
+  const domain = url ? url.replace(/^https?:\/\//, '').split('.')[0] : '';
+
+  if (isConnected) {
+    if (authDot) authDot.className = 'status-indicator-dot connected';
+    if (authLabel) {
+      authLabel.textContent = `Supabase 연결됨 (${domain || 'Cloud'})`;
+      authLabel.style.color = '#10b981';
+    }
+    if (settingsDot) settingsDot.className = 'status-indicator-dot connected';
+    if (settingsBadgeText) {
+      settingsBadgeText.textContent = `연결됨 (${domain || 'Active'})`;
+      settingsBadgeText.style.color = '#10b981';
+    }
+  } else {
+    if (authDot) authDot.className = 'status-indicator-dot disconnected';
+    if (authLabel) {
+      authLabel.textContent = 'Supabase 미연결 (로컬 데모 모드)';
+      authLabel.style.color = 'var(--text-secondary)';
+    }
+    if (settingsDot) settingsDot.className = 'status-indicator-dot disconnected';
+    if (settingsBadgeText) {
+      settingsBadgeText.textContent = '연결되지 않음';
+      settingsBadgeText.style.color = 'var(--text-muted)';
+    }
+  }
+
+  // Sync inputs if existing
+  const savedUrl = localStorage.getItem(SUPABASE_STORAGE_URL_KEY) || '';
+  const savedKey = localStorage.getItem(SUPABASE_STORAGE_KEY_KEY) || '';
+  const settingsUrlInput = document.getElementById('settingsSupabaseUrl');
+  const settingsKeyInput = document.getElementById('settingsSupabaseKey');
+  const quickUrlInput = document.getElementById('quickSupabaseUrl');
+  const quickKeyInput = document.getElementById('quickSupabaseKey');
+
+  if (settingsUrlInput) settingsUrlInput.value = savedUrl;
+  if (settingsKeyInput) settingsKeyInput.value = savedKey;
+  if (quickUrlInput) quickUrlInput.value = savedUrl;
+  if (quickKeyInput) quickKeyInput.value = savedKey;
+}
+
+function showAuthAlert(msg, type = 'error') {
+  const alertBox = document.getElementById('authAlertBox');
+  if (!alertBox) return;
+  alertBox.className = `auth-alert-box ${type}`;
+  alertBox.innerHTML = msg;
+  alertBox.classList.remove('hidden');
+}
+
+function clearAuthAlert() {
+  const alertBox = document.getElementById('authAlertBox');
+  if (alertBox) {
+    alertBox.className = 'auth-alert-box hidden';
+    alertBox.innerHTML = '';
+  }
+}
+
+function setAuthenticatedUser(user, showToastMsg = true) {
   appState.currentUser = user;
   sessionStorage.setItem('kkomkkom_authenticated_user', JSON.stringify(user));
   setActiveUser(user.role || '엄마');
   authScreen.classList.add('unlocked');
-  showToast(`🍼 ${user.role} 님으로 로그인되었습니다! (${user.email})`);
+  clearAuthAlert();
+  if (showToastMsg) {
+    const badge = user.provider === 'supabase' ? '⚡' : '🍼';
+    showToast(`${badge} ${user.role} 님으로 로그인되었습니다! (${user.email})`);
+  }
 }
 
-function logout() {
+async function logout(callSupabaseSignOut = true) {
+  if (callSupabaseSignOut && supabaseClient) {
+    try {
+      await supabaseClient.auth.signOut();
+    } catch (e) {
+      console.warn('SignOut error:', e);
+    }
+  }
   appState.currentUser = null;
   sessionStorage.removeItem('kkomkkom_authenticated_user');
   authScreen.classList.remove('unlocked');
@@ -1007,13 +1137,13 @@ const quickLoginDadBtn = document.getElementById('quickLoginDadBtn');
 
 if (quickLoginMomBtn) {
   quickLoginMomBtn.addEventListener('click', () => {
-    setAuthenticatedUser({ email: 'mom@kkom.com', role: '엄마', coupleCode: 'KKOM-7788' });
+    setAuthenticatedUser({ email: 'mom@kkom.com', role: '엄마', coupleCode: 'KKOM-7788', provider: 'quick' });
   });
 }
 
 if (quickLoginDadBtn) {
   quickLoginDadBtn.addEventListener('click', () => {
-    setAuthenticatedUser({ email: 'dad@kkom.com', role: '아빠', coupleCode: 'KKOM-7788' });
+    setAuthenticatedUser({ email: 'dad@kkom.com', role: '아빠', coupleCode: 'KKOM-7788', provider: 'quick' });
   });
 }
 
@@ -1033,27 +1163,260 @@ document.querySelectorAll('.auth-tabs .segment-btn').forEach(tabBtn => {
 // Email Login Form Submit
 const emailLoginForm = document.getElementById('emailLoginForm');
 if (emailLoginForm) {
-  emailLoginForm.addEventListener('submit', (e) => {
+  emailLoginForm.addEventListener('submit', async (e) => {
     e.preventDefault();
+    clearAuthAlert();
     const email = document.getElementById('loginEmail').value.trim();
     const password = document.getElementById('loginPassword').value.trim();
+    const submitBtn = emailLoginForm.querySelector('button[type="submit"]');
 
-    // Determine role by email or default
-    const role = email.includes('dad') || email.includes('papa') ? '아빠' : '엄마';
-    setAuthenticatedUser({ email: email, role: role, coupleCode: 'KKOM-7788' });
+    if (supabaseClient) {
+      const origText = submitBtn.innerHTML;
+      submitBtn.disabled = true;
+      submitBtn.innerHTML = '⚡ Supabase 로그인 중...';
+      try {
+        const { data, error } = await supabaseClient.auth.signInWithPassword({
+          email: email,
+          password: password
+        });
+
+        if (error) {
+          let koreanErr = error.message;
+          if (error.message.includes('Invalid login credentials')) {
+            koreanErr = '❌ 이메일 또는 비밀번호가 일치하지 않습니다.';
+          } else if (error.message.includes('Email not confirmed')) {
+            koreanErr = '📧 이메일 인증이 아직 완료되지 않았습니다. 메일함을 확인해주세요.';
+          } else if (error.message.includes('rate limit')) {
+            koreanErr = '⏳ 로그인 시도가 너무 많습니다. 잠시 후 다시 시도해주세요.';
+          }
+          showAuthAlert(koreanErr, 'error');
+          showToast(koreanErr);
+        } else if (data && data.user) {
+          const userMeta = data.user.user_metadata || {};
+          const role = userMeta.role || (email.includes('dad') || email.includes('papa') ? '아빠' : '엄마');
+          const coupleCode = userMeta.coupleCode || 'KKOM-7788';
+          setAuthenticatedUser({
+            email: data.user.email,
+            role: role,
+            coupleCode: coupleCode,
+            id: data.user.id,
+            provider: 'supabase'
+          });
+        }
+      } catch (err) {
+        showAuthAlert('통신 중 오류가 발생했습니다: ' + err.message, 'error');
+      } finally {
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = origText;
+      }
+    } else {
+      // Local fallback
+      const role = email.includes('dad') || email.includes('papa') ? '아빠' : '엄마';
+      setAuthenticatedUser({ email: email, role: role, coupleCode: 'KKOM-7788', provider: 'local' });
+      showToast('💡 Supabase 미연동 상태로 로컬 데모 모드로 로그인되었습니다.');
+    }
   });
 }
 
 // Register Form Submit
 const registerForm = document.getElementById('registerForm');
 if (registerForm) {
-  registerForm.addEventListener('submit', (e) => {
+  registerForm.addEventListener('submit', async (e) => {
     e.preventDefault();
+    clearAuthAlert();
     const email = document.getElementById('regEmail').value.trim();
+    const password = document.getElementById('regPassword').value.trim();
     const role = document.querySelector('input[name="regRole"]:checked').value;
     const coupleCode = document.getElementById('regCoupleCode').value.trim() || 'KKOM-7788';
+    const submitBtn = registerForm.querySelector('button[type="submit"]');
 
-    setAuthenticatedUser({ email: email, role: role, coupleCode: coupleCode });
+    if (supabaseClient) {
+      const origText = submitBtn.innerHTML;
+      submitBtn.disabled = true;
+      submitBtn.innerHTML = '⚡ Supabase 회원가입 중...';
+      try {
+        const { data, error } = await supabaseClient.auth.signUp({
+          email: email,
+          password: password,
+          options: {
+            data: {
+              role: role,
+              coupleCode: coupleCode
+            }
+          }
+        });
+
+        if (error) {
+          let koreanErr = error.message;
+          if (error.message.includes('already registered')) {
+            koreanErr = '⚠️ 이미 등록된 이메일 계정입니다. 로그인 탭에서 로그인해주세요.';
+          } else if (error.message.includes('Password should be')) {
+            koreanErr = '⚠️ 비밀번호는 최소 6자리 이상이어야 합니다.';
+          }
+          showAuthAlert(koreanErr, 'error');
+          showToast(koreanErr);
+        } else if (data && data.user) {
+          if (data.session) {
+            // Instant sign-in (email confirmation disabled in Supabase)
+            setAuthenticatedUser({
+              email: data.user.email,
+              role: role,
+              coupleCode: coupleCode,
+              id: data.user.id,
+              provider: 'supabase'
+            });
+            showToast('🎉 가족 회원가입 및 로그인이 완료되었습니다!');
+          } else {
+            // Confirmation email sent
+            showAuthAlert(`📧 [${email}] 계정으로 확인 메일이 전송되었습니다. 메일의 확인 링크를 누른 후 로그인해주세요!`, 'info');
+            showToast('📧 인증 확인 메일을 발송했습니다!');
+          }
+        }
+      } catch (err) {
+        showAuthAlert('가입 처리 중 오류가 발생했습니다: ' + err.message, 'error');
+      } finally {
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = origText;
+      }
+    } else {
+      // Local fallback
+      setAuthenticatedUser({ email: email, role: role, coupleCode: coupleCode, provider: 'local' });
+      showToast('💡 Supabase 미연동 상태로 로컬 데모 모드로 가입되었습니다.');
+    }
+  });
+}
+
+// Supabase Configuration Modals Controller
+const supabaseQuickModal = document.getElementById('supabaseQuickModal');
+const openSupabaseQuickModalBtn = document.getElementById('openSupabaseQuickModalBtn');
+const closeSupabaseQuickModalBtn = document.getElementById('closeSupabaseQuickModalBtn');
+const quickSupabaseForm = document.getElementById('quickSupabaseForm');
+const quickSupabaseClearBtn = document.getElementById('quickSupabaseClearBtn');
+const quickSupabaseFeedback = document.getElementById('quickSupabaseFeedback');
+
+if (openSupabaseQuickModalBtn) {
+  openSupabaseQuickModalBtn.addEventListener('click', () => {
+    updateSupabaseStatusUI(!!supabaseClient, localStorage.getItem(SUPABASE_STORAGE_URL_KEY) || '');
+    if (quickSupabaseFeedback) quickSupabaseFeedback.className = 'supabase-feedback-box hidden';
+    openModal(supabaseQuickModal);
+  });
+}
+
+if (closeSupabaseQuickModalBtn) {
+  closeSupabaseQuickModalBtn.addEventListener('click', () => {
+    closeModal(supabaseQuickModal);
+  });
+}
+
+async function testAndSaveSupabase(url, key, feedbackEl, modalToClose = null) {
+  if (!url || !key) {
+    if (feedbackEl) {
+      feedbackEl.className = 'supabase-feedback-box error';
+      feedbackEl.textContent = 'URL과 API 키를 모두 입력해주세요.';
+    }
+    return false;
+  }
+
+  if (!url.startsWith('http://') && !url.startsWith('https://')) {
+    if (feedbackEl) {
+      feedbackEl.className = 'supabase-feedback-box error';
+      feedbackEl.textContent = '올바른 URL 형식(https://...)을 입력해주세요.';
+    }
+    return false;
+  }
+
+  if (feedbackEl) {
+    feedbackEl.className = 'supabase-feedback-box loading';
+    feedbackEl.textContent = '⚡ Supabase 서버 연결 테스트 중...';
+  }
+
+  try {
+    const testClient = window.supabase.createClient(url, key);
+    const { data, error } = await testClient.auth.getSession();
+    if (error) {
+      throw error;
+    }
+
+    // Success! Save to local storage
+    localStorage.setItem(SUPABASE_STORAGE_URL_KEY, url);
+    localStorage.setItem(SUPABASE_STORAGE_KEY_KEY, key);
+    initSupabase();
+
+    if (feedbackEl) {
+      feedbackEl.className = 'supabase-feedback-box success';
+      feedbackEl.textContent = '✅ Supabase 연결 성공! 설정이 저장되었습니다.';
+    }
+    showToast('⚡ Supabase 프로젝트와 성공적으로 연결되었습니다!');
+
+    if (modalToClose) {
+      setTimeout(() => {
+        closeModal(modalToClose);
+      }, 900);
+    }
+    return true;
+  } catch (err) {
+    console.warn('Supabase test failed:', err);
+    if (feedbackEl) {
+      feedbackEl.className = 'supabase-feedback-box error';
+      feedbackEl.textContent = `❌ 연결 실패: ${err.message || 'API 키 또는 URL을 다시 확인해주세요.'}`;
+    }
+    showToast('❌ Supabase 연결 실패: ' + (err.message || '설정을 확인해주세요.'));
+    return false;
+  }
+}
+
+if (quickSupabaseForm) {
+  quickSupabaseForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const url = document.getElementById('quickSupabaseUrl').value.trim();
+    const key = document.getElementById('quickSupabaseKey').value.trim();
+    await testAndSaveSupabase(url, key, quickSupabaseFeedback, supabaseQuickModal);
+  });
+}
+
+if (quickSupabaseClearBtn) {
+  quickSupabaseClearBtn.addEventListener('click', () => {
+    localStorage.removeItem(SUPABASE_STORAGE_URL_KEY);
+    localStorage.removeItem(SUPABASE_STORAGE_KEY_KEY);
+    supabaseClient = null;
+    updateSupabaseStatusUI(false);
+    if (quickSupabaseFeedback) {
+      quickSupabaseFeedback.className = 'supabase-feedback-box success';
+      quickSupabaseFeedback.textContent = 'ℹ️ Supabase 연결이 해제되었습니다. 로컬 모드로 전환됩니다.';
+    }
+    showToast('ℹ️ Supabase 연결이 해제되었습니다.');
+  });
+}
+
+// Settings Modal Supabase Form
+const settingsSupabaseForm = document.getElementById('settingsSupabaseForm');
+const settingsSupabaseDisconnectBtn = document.getElementById('settingsSupabaseDisconnectBtn');
+
+if (settingsSupabaseForm) {
+  settingsSupabaseForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const url = document.getElementById('settingsSupabaseUrl').value.trim();
+    const key = document.getElementById('settingsSupabaseKey').value.trim();
+    const submitBtn = document.getElementById('settingsSupabaseSaveBtn');
+    submitBtn.disabled = true;
+    submitBtn.textContent = '⚡ 연결 테스트 중...';
+    try {
+      await testAndSaveSupabase(url, key, null, settingsModal);
+    } finally {
+      submitBtn.disabled = false;
+      submitBtn.textContent = '연결 저장 및 테스트 ⚡';
+    }
+  });
+}
+
+if (settingsSupabaseDisconnectBtn) {
+  settingsSupabaseDisconnectBtn.addEventListener('click', () => {
+    localStorage.removeItem(SUPABASE_STORAGE_URL_KEY);
+    localStorage.removeItem(SUPABASE_STORAGE_KEY_KEY);
+    supabaseClient = null;
+    updateSupabaseStatusUI(false);
+    closeModal(settingsModal);
+    showToast('ℹ️ Supabase 연결이 해제되었습니다. 로컬 모드로 전환됩니다.');
   });
 }
 
@@ -1451,7 +1814,10 @@ window.addEventListener('DOMContentLoaded', () => {
   setActiveUser(appState.activeUser || '엄마');
   refreshAll();
 
-  // Check Session Authentication
+  // Initialize Supabase Client
+  initSupabase();
+
+  // Check Session Authentication (Supabase first, then sessionStorage fallback)
   const savedUser = sessionStorage.getItem('kkomkkom_authenticated_user');
   if (savedUser) {
     try {
@@ -1462,6 +1828,25 @@ window.addEventListener('DOMContentLoaded', () => {
     } catch (e) {
       authScreen.classList.remove('unlocked');
     }
+  } else if (supabaseClient) {
+    supabaseClient.auth.getSession().then(({ data: { session }, error }) => {
+      if (session && session.user) {
+        const userMeta = session.user.user_metadata || {};
+        const role = userMeta.role || (session.user.email.includes('dad') ? '아빠' : '엄마');
+        const coupleCode = userMeta.coupleCode || 'KKOM-7788';
+        setAuthenticatedUser({
+          email: session.user.email,
+          role: role,
+          coupleCode: coupleCode,
+          id: session.user.id,
+          provider: 'supabase'
+        }, false);
+      } else {
+        authScreen.classList.remove('unlocked');
+      }
+    }).catch(() => {
+      authScreen.classList.remove('unlocked');
+    });
   } else {
     authScreen.classList.remove('unlocked');
   }
