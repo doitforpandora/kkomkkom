@@ -178,15 +178,18 @@
       <!-- Card 1: Feeding -->
       <div class="kpi-card feeding-card">
         <div class="card-header">
-          <span class="card-icon">🍼</span>
-          <span class="card-title">오늘 총 수유량</span>
-          <span class="card-count" id="feedCountBadge">4회</span>
+          <div class="card-header-left">
+            <span class="card-icon">🍼</span>
+            <span class="card-title">오늘 총 수유량</span>
+            <span class="card-count" id="feedCountBadge">4회</span>
+          </div>
+          <button type="button" class="card-action-btn feed" id="cardAddFeedBtn">+ 수유 추가</button>
         </div>
         <div class="card-body">
           <div class="main-metric">
             <span class="metric-val" id="totalFeedAmount">560</span>
             <span class="metric-unit">ml</span>
-            <span class="metric-target">/ 목표 800ml</span>
+            <span class="metric-target">/ 목표 <span id="targetAmountDisplay">800</span>ml <button type="button" id="editFeedTargetBtn" class="mini-icon-btn" title="목표 수유량 변경">✏️</button></span>
           </div>
           <div class="progress-bar-wrap">
             <div class="progress-bar-fill" id="feedProgressBar" style="width: 70%;"></div>
@@ -200,9 +203,12 @@
       <!-- Card 2: Sleep -->
       <div class="kpi-card sleep-card">
         <div class="card-header">
-          <span class="card-icon">💤</span>
-          <span class="card-title">오늘 총 수면</span>
-          <span class="card-count" id="sleepCountBadge">총 2회</span>
+          <div class="card-header-left">
+            <span class="card-icon">💤</span>
+            <span class="card-title">오늘 총 수면</span>
+            <span class="card-count" id="sleepCountBadge">총 2회</span>
+          </div>
+          <button type="button" class="card-action-btn sleep" id="cardAddSleepBtn">+ 수면 추가</button>
         </div>
         <div class="card-body">
           <div class="main-metric">
@@ -221,9 +227,12 @@
       <!-- Card 3: Diaper -->
       <div class="kpi-card diaper-card">
         <div class="card-header">
-          <span class="card-icon">🧷</span>
-          <span class="card-title">기저귀 교체</span>
-          <span class="card-count" id="diaperTotalBadge">총 6회</span>
+          <div class="card-header-left">
+            <span class="card-icon">🧷</span>
+            <span class="card-title">기저귀 교체</span>
+            <span class="card-count" id="diaperTotalBadge">총 6회</span>
+          </div>
+          <button type="button" class="card-action-btn diaper" id="cardAddDiaperBtn">+ 기저귀 추가</button>
         </div>
         <div class="card-body">
           <div class="diaper-split-metric">
@@ -630,6 +639,55 @@
           </form>
         </div>
 
+      </div>
+    </div>
+
+    <!-- 6. Universal Edit / Delete Record Modal -->
+    <div id="editEntryModal" class="modal-backdrop hidden">
+      <div class="modal-card">
+        <div class="modal-header">
+          <h3 id="editModalTitle">✏️ 기록 수정 및 삭제</h3>
+          <button class="close-modal-btn">&times;</button>
+        </div>
+        <form id="editEntryForm" class="modal-form">
+          <input type="hidden" id="editEntryCategory">
+          <input type="hidden" id="editEntryId">
+
+          <!-- Dynamic fields container populated by JS based on category -->
+          <div id="editDynamicFields"></div>
+
+          <div class="modal-footer-split">
+            <button type="button" id="deleteEntryBtn" class="btn-danger">🗑️ 삭제하기</button>
+            <button type="submit" class="btn-confirm">수정 완료</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- 7. Edit Target Feeding Amount Modal -->
+    <div id="targetModal" class="modal-backdrop hidden">
+      <div class="modal-card">
+        <div class="modal-header">
+          <h3>🎯 하루 목표 수유량 설정</h3>
+          <button class="close-modal-btn">&times;</button>
+        </div>
+        <form id="targetForm" class="modal-form">
+          <div class="form-group">
+            <label class="form-label">하루 권장 수유 목표 (ml)</label>
+            <input type="number" id="feedTargetInput" class="num-input" min="300" max="1500" step="50" value="800" required>
+            <span class="field-hint">아기 월령과 몸무게에 맞게 일일 목표량을 조절하세요. (신생아 평균 600~800ml)</span>
+          </div>
+          <div class="preset-buttons">
+            <button type="button" class="preset-pill target-preset" data-target="700">700ml</button>
+            <button type="button" class="preset-pill target-preset" data-target="800">800ml</button>
+            <button type="button" class="preset-pill target-preset" data-target="900">900ml</button>
+            <button type="button" class="preset-pill target-preset" data-target="1000">1,000ml</button>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn-cancel close-modal-btn">취소</button>
+            <button type="submit" class="btn-confirm">목표 저장</button>
+          </div>
+        </form>
       </div>
     </div>
 

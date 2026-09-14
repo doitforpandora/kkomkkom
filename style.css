@@ -722,26 +722,60 @@ body {
   justify-content: space-between;
 }
 
+.card-header-left {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
 .card-header .card-icon {
   font-size: 18px;
-  margin-right: 6px;
 }
 
 .card-title {
   font-size: 14px;
   font-weight: 700;
   color: var(--text-secondary);
-  flex: 1;
 }
 
 .card-count {
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 700;
   background: var(--bg-elevated);
-  padding: 2px 8px;
+  padding: 2px 7px;
   border-radius: var(--radius-full);
   color: var(--text-primary);
 }
+
+.card-action-btn {
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-color);
+  font-size: 11px;
+  font-weight: 700;
+  padding: 4px 10px;
+  border-radius: var(--radius-full);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.card-action-btn:hover {
+  transform: translateY(-1px);
+}
+
+.card-action-btn.feed { color: var(--feed-color); border-color: var(--feed-color); background: var(--feed-color-subtle); }
+.card-action-btn.sleep { color: var(--sleep-color); border-color: var(--sleep-color); background: var(--sleep-color-subtle); }
+.card-action-btn.diaper { color: var(--diaper-color); border-color: var(--diaper-color); background: var(--diaper-color-subtle); }
+
+.mini-icon-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 12px;
+  padding: 2px 4px;
+  opacity: 0.7;
+}
+.mini-icon-btn:hover { opacity: 1; transform: scale(1.1); }
+
 
 .main-metric {
   display: flex;
@@ -1055,7 +1089,7 @@ body {
 .event-row-right {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
   font-size: 12px;
   color: var(--text-secondary);
 }
@@ -1068,6 +1102,56 @@ body {
 }
 .author-pill-tag.mom { background: var(--mom-color-bg); color: var(--mom-color); }
 .author-pill-tag.dad { background: var(--dad-color-bg); color: var(--dad-color); }
+
+.event-action-btns {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  margin-left: 4px;
+}
+
+.btn-item-action {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 11px;
+  padding: 2px 4px;
+  border-radius: 4px;
+  opacity: 0.7;
+  transition: all 0.15s ease;
+}
+.btn-item-action:hover {
+  opacity: 1;
+  background: var(--bg-card);
+  transform: scale(1.1);
+}
+.btn-item-action.delete:hover {
+  color: #ef4444;
+}
+
+.modal-footer-split {
+  display: flex;
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.btn-danger {
+  flex: 1;
+  background: rgba(239, 68, 68, 0.15);
+  border: 1px solid #ef4444;
+  color: #ef4444;
+  font-weight: 700;
+  font-size: 14px;
+  padding: 12px 0;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+.btn-danger:hover {
+  background: #ef4444;
+  color: white;
+}
+
 
 /* 8. Bottom Navigation & Action Bar */
 .bottom-action-bar {

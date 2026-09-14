@@ -196,7 +196,9 @@ function updateDashboard() {
   document.getElementById('totalFeedAmount').textContent = totalAmount;
   document.getElementById('feedCountBadge').textContent = `${feedCount}회`;
 
-  const targetAmount = 800;
+  const targetAmount = appState.targetFeedAmount || 800;
+  const targetDisplay = document.getElementById('targetAmountDisplay');
+  if (targetDisplay) targetDisplay.textContent = targetAmount;
   const feedPct = Math.min(100, Math.round((totalAmount / targetAmount) * 100));
   document.getElementById('feedProgressBar').style.width = `${feedPct}%`;
 
@@ -367,6 +369,7 @@ function renderEventList() {
 
   appState.feeds.forEach(f => {
     allEvents.push({
+      id: f.id,
       category: 'feed',
       badgeClass: 'feed',
       badgeText: '수유',
@@ -379,6 +382,7 @@ function renderEventList() {
 
   appState.sleeps.forEach(s => {
     allEvents.push({
+      id: s.id,
       category: 'sleep',
       badgeClass: 'sleep',
       badgeText: '수면',
@@ -392,6 +396,7 @@ function renderEventList() {
   appState.diapers.forEach(d => {
     const label = d.type === 'pee' ? '소변' : (d.type === 'poo' ? `대변(${d.color || '황금'})` : '소변+대변');
     allEvents.push({
+      id: d.id,
       category: 'diaper',
       badgeClass: 'diaper',
       badgeText: '기저귀',
@@ -418,11 +423,147 @@ function renderEventList() {
       <div class="event-row-right">
         <span class="event-time">${evt.time}</span>
         <span class="author-pill-tag ${authorClass}">${authorEmoji} ${evt.author}</span>
+        <div class="event-action-btns">
+          <button type="button" class="btn-item-action edit-entry-btn" data-cat="${evt.category}" data-id="${evt.id}" title="기록 수정">✏️</button>
+          <button type="button" class="btn-item-action delete-entry-btn" data-cat="${evt.category}" data-id="${evt.id}" title="기록 삭제">🗑️</button>
+        </div>
       </div>
     `;
+
+    // Row Click to Edit
+    row.querySelector('.edit-entry-btn').addEventListener('click', (e) => {
+      e.stopPropagation();
+      openEditRecordModal(evt.category, evt.id);
+    });
+
+    row.querySelector('.delete-entry-btn').addEventListener('click', (e) => {
+      e.stopPropagation();
+      deleteRecord(evt.category, evt.id);
+    });
+
     listEl.appendChild(row);
   });
 }
+
+// Universal Record Edit & Delete Logic
+function deleteRecord(category, id) {
+  if (!confirm('정말 이 기록을 삭제하시겠습니까? 삭제 후에는 복구할 수 없습니다.')) return;
+
+  if (category === 'feed') {
+    appState.feeds = appState.feeds.filter(f => f.id !== id);
+  } else if (category === 'sleep') {
+    appState.sleeps = appState.sleeps.filter(s => s.id !== id);
+  } else if (category === 'diaper') {
+    appState.diapers = appState.diapers.filter(d => d.id !== id);
+  }
+
+  saveState(appState);
+  refreshAll();
+  const catName = category === 'feed' ? '수유' : (category === 'sleep' ? '수면' : '기저귀');
+  showToast(`🗑️ ${catName} 기록이 삭제되었습니다.`);
+}
+
+function openEditRecordModal(category, id) {
+  const modal = document.getElementById('editEntryModal');
+  const titleEl = document.getElementById('editModalTitle');
+  const catInput = document.getElementById('editEntryCategory');
+  const idInput = document.getElementById('editEntryId');
+  const fieldsContainer = document.getElementById('editDynamicFields');
+
+  catInput.value = category;
+  idInput.value = id;
+  fieldsContainer.innerHTML = '';
+
+  if (category === 'feed') {
+    const item = appState.feeds.find(f => f.id === id);
+    if (!item) return;
+    titleEl.textContent = '🍼 수유 기록 수정';
+    fieldsContainer.innerHTML = `
+      <div class="form-group">
+        <label class="form-label">수유 종류</label>
+        <select id="editFeedType" class="text-input">
+          <option value="분유" ${item.type === '분유' ? 'selected' : ''}>분유</option>
+          <option value="모유" ${item.type === '모유' ? 'selected' : ''}>모유</option>
+          <option value="유축" ${item.type === '유축' ? 'selected' : ''}>유축</option>
+          <option value="이유식" ${item.type === '이유식' ? 'selected' : ''}>이유식</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">수유량 (ml)</label>
+        <input type="number" id="editFeedAmount" class="num-input" value="${item.amount}" min="10" max="400" step="10" required>
+      </div>
+      <div class="form-group">
+        <label class="form-label">먹은 시간</label>
+        <input type="time" id="editFeedTime" class="time-input" value="${item.time}" required>
+      </div>
+      <div class="form-group">
+        <label class="form-label">기록자</label>
+        <div class="author-toggle">
+          <label><input type="radio" name="editAuthor" value="엄마" ${item.author === '엄마' ? 'checked' : ''}> <span class="author-tag mom">👩 엄마</span></label>
+          <label><input type="radio" name="editAuthor" value="아빠" ${item.author === '아빠' ? 'checked' : ''}> <span class="author-tag dad">👨 아빠</span></label>
+        </div>
+      </div>
+    `;
+  } else if (category === 'sleep') {
+    const item = appState.sleeps.find(s => s.id === id);
+    if (!item) return;
+    titleEl.textContent = '💤 수면 기록 수정';
+    fieldsContainer.innerHTML = `
+      <div class="form-group">
+        <label class="form-label">수면 종류</label>
+        <select id="editSleepType" class="text-input">
+          <option value="nap" ${item.type === 'nap' ? 'selected' : ''}>낮잠</option>
+          <option value="night" ${item.type === 'night' ? 'selected' : ''}>밤잠</option>
+        </select>
+      </div>
+      <div class="time-range-group">
+        <div class="form-group">
+          <label class="form-label">잠든 시간</label>
+          <input type="time" id="editSleepStart" class="time-input" value="${item.startTime}" required>
+        </div>
+        <div class="form-group">
+          <label class="form-label">일어난 시간</label>
+          <input type="time" id="editSleepEnd" class="time-input" value="${item.endTime}" required>
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">기록자</label>
+        <div class="author-toggle">
+          <label><input type="radio" name="editAuthor" value="엄마" ${item.author === '엄마' ? 'checked' : ''}> <span class="author-tag mom">👩 엄마</span></label>
+          <label><input type="radio" name="editAuthor" value="아빠" ${item.author === '아빠' ? 'checked' : ''}> <span class="author-tag dad">👨 아빠</span></label>
+        </div>
+      </div>
+    `;
+  } else if (category === 'diaper') {
+    const item = appState.diapers.find(d => d.id === id);
+    if (!item) return;
+    titleEl.textContent = '🧷 기저귀 기록 수정';
+    fieldsContainer.innerHTML = `
+      <div class="form-group">
+        <label class="form-label">기저귀 종류</label>
+        <select id="editDiaperType" class="text-input">
+          <option value="pee" ${item.type === 'pee' ? 'selected' : ''}>소변만 💧</option>
+          <option value="poo" ${item.type === 'poo' ? 'selected' : ''}>대변만 💩</option>
+          <option value="both" ${item.type === 'both' ? 'selected' : ''}>소변+대변 💧💩</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">교체 시간</label>
+        <input type="time" id="editDiaperTime" class="time-input" value="${item.time}" required>
+      </div>
+      <div class="form-group">
+        <label class="form-label">기록자</label>
+        <div class="author-toggle">
+          <label><input type="radio" name="editAuthor" value="엄마" ${item.author === '엄마' ? 'checked' : ''}> <span class="author-tag mom">👩 엄마</span></label>
+          <label><input type="radio" name="editAuthor" value="아빠" ${item.author === '아빠' ? 'checked' : ''}> <span class="author-tag dad">👨 아빠</span></label>
+        </div>
+      </div>
+    `;
+  }
+
+  openModal(modal);
+}
+
 
 // 5. Render Shared Handover Memos
 function renderMemos() {
@@ -1113,6 +1254,97 @@ document.getElementById('passcodeForm').addEventListener('submit', (e) => {
   showToast(`🔐 비밀코드가 [${inputNew}]로 변경되었습니다!`);
 });
 
+// 15. Edit Record Form Submit
+const editEntryModal = document.getElementById('editEntryModal');
+const editEntryForm = document.getElementById('editEntryForm');
+const deleteEntryBtn = document.getElementById('deleteEntryBtn');
+
+if (editEntryForm) {
+  editEntryForm.addEventListener('submit', (e) => {
+    e.preventDefault();
+    const category = document.getElementById('editEntryCategory').value;
+    const id = document.getElementById('editEntryId').value;
+    const author = document.querySelector('input[name="editAuthor"]:checked').value;
+
+    if (category === 'feed') {
+      const item = appState.feeds.find(f => f.id === id);
+      if (item) {
+        item.type = document.getElementById('editFeedType').value;
+        item.amount = Number(document.getElementById('editFeedAmount').value);
+        item.time = document.getElementById('editFeedTime').value;
+        item.author = author;
+      }
+    } else if (category === 'sleep') {
+      const item = appState.sleeps.find(s => s.id === id);
+      if (item) {
+        item.type = document.getElementById('editSleepType').value;
+        item.label = item.type === 'night' ? '밤잠' : '낮잠';
+        item.startTime = document.getElementById('editSleepStart').value;
+        item.endTime = document.getElementById('editSleepEnd').value;
+        item.author = author;
+      }
+    } else if (category === 'diaper') {
+      const item = appState.diapers.find(d => d.id === id);
+      if (item) {
+        item.type = document.getElementById('editDiaperType').value;
+        item.time = document.getElementById('editDiaperTime').value;
+        item.author = author;
+      }
+    }
+
+    saveState(appState);
+    closeModal(editEntryModal);
+    refreshAll();
+    showToast('✨ 기록이 성공적으로 수정되었습니다!');
+  });
+}
+
+if (deleteEntryBtn) {
+  deleteEntryBtn.addEventListener('click', () => {
+    const category = document.getElementById('editEntryCategory').value;
+    const id = document.getElementById('editEntryId').value;
+    closeModal(editEntryModal);
+    deleteRecord(category, id);
+  });
+}
+
+// 16. Card Header Quick Add Buttons
+document.getElementById('cardAddFeedBtn').addEventListener('click', () => openModal(feedModal));
+document.getElementById('cardAddSleepBtn').addEventListener('click', () => openModal(sleepModal));
+document.getElementById('cardAddDiaperBtn').addEventListener('click', () => openModal(diaperModal));
+
+// 17. Target Feeding Amount Modal Controller
+const targetModal = document.getElementById('targetModal');
+const editFeedTargetBtn = document.getElementById('editFeedTargetBtn');
+const targetForm = document.getElementById('targetForm');
+
+if (editFeedTargetBtn) {
+  editFeedTargetBtn.addEventListener('click', () => {
+    document.getElementById('feedTargetInput').value = appState.targetFeedAmount || 800;
+    openModal(targetModal);
+  });
+}
+
+document.querySelectorAll('.target-preset').forEach(pill => {
+  pill.addEventListener('click', () => {
+    document.getElementById('feedTargetInput').value = pill.dataset.target;
+  });
+});
+
+if (targetForm) {
+  targetForm.addEventListener('submit', (e) => {
+    e.preventDefault();
+    const val = Number(document.getElementById('feedTargetInput').value);
+    if (val && val >= 300) {
+      appState.targetFeedAmount = val;
+      saveState(appState);
+      closeModal(targetModal);
+      refreshAll();
+      showToast(`🎯 오늘 수유 목표량이 [${val}ml]로 설정되었습니다!`);
+    }
+  });
+}
+
 // Refresh Everything
 function refreshAll() {
   updateBabyProfileUI();
@@ -1129,7 +1361,6 @@ window.addEventListener('DOMContentLoaded', () => {
   document.getElementById('feedTimeInput').value = curTime;
   document.getElementById('diaperTimeInput').value = curTime;
   
-  // Set default baby profile date to 60 days ahead if unborn
   if (!appState.babyProfile) {
     appState.babyProfile = {
       status: 'unborn',
@@ -1138,6 +1369,10 @@ window.addEventListener('DOMContentLoaded', () => {
       gender: 'secret',
       passcode: '1212'
     };
+  }
+
+  if (!appState.targetFeedAmount) {
+    appState.targetFeedAmount = 800;
   }
 
   setActiveUser(appState.activeUser || '엄마');
@@ -1151,5 +1386,6 @@ window.addEventListener('DOMContentLoaded', () => {
     lockScreen.classList.remove('unlocked');
   }
 });
+
 
 
