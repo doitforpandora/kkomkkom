@@ -10,6 +10,46 @@
   <link rel="stylesheet" href="style.css">
 </head>
 <body class="dark-theme">
+  <!-- PIN Code Security Lock Screen Overlay -->
+  <div id="lockScreen" class="lock-screen-overlay">
+    <div class="lock-card">
+      <div class="lock-icon-wrap">
+        <span class="lock-icon">🔒</span>
+        <span class="lock-baby-icon">🍼</span>
+      </div>
+      <h2 class="lock-title">꼼꼼이 가족 전용 공간</h2>
+      <p class="lock-desc">부부 전용 비밀코드 4자리를 입력하세요</p>
+
+      <!-- 4 PIN Dots Indicator -->
+      <div class="pin-dots-row" id="pinDotsRow">
+        <span class="pin-dot"></span>
+        <span class="pin-dot"></span>
+        <span class="pin-dot"></span>
+        <span class="pin-dot"></span>
+      </div>
+
+      <div id="lockErrorMessage" class="lock-error-msg hidden">비밀코드가 일치하지 않습니다. 다시 입력해주세요.</div>
+
+      <!-- Virtual Keypad -->
+      <div class="keypad-grid">
+        <button type="button" class="keypad-btn" data-key="1">1</button>
+        <button type="button" class="keypad-btn" data-key="2">2</button>
+        <button type="button" class="keypad-btn" data-key="3">3</button>
+        <button type="button" class="keypad-btn" data-key="4">4</button>
+        <button type="button" class="keypad-btn" data-key="5">5</button>
+        <button type="button" class="keypad-btn" data-key="6">6</button>
+        <button type="button" class="keypad-btn" data-key="7">7</button>
+        <button type="button" class="keypad-btn" data-key="8">8</button>
+        <button type="button" class="keypad-btn" data-key="9">9</button>
+        <button type="button" class="keypad-btn action" id="clearPinBtn">C</button>
+        <button type="button" class="keypad-btn" data-key="0">0</button>
+        <button type="button" class="keypad-btn action" id="deletePinBtn">⌫</button>
+      </div>
+
+      <p class="lock-hint">💡 힌트: 부부 전용 코드 (기본: 1212)</p>
+    </div>
+  </div>
+
   <div id="app" class="app-container">
     <!-- Top Bar -->
     <header class="app-header">
@@ -32,6 +72,9 @@
             <button type="button" class="user-pill dad" data-user="아빠" id="selectDadBtn">👨 아빠</button>
           </div>
         </div>
+        <button id="lockAppBtn" class="icon-btn" aria-label="잠금" title="페이지 잠그기">
+          <span>🔒</span>
+        </button>
         <button id="themeToggleBtn" class="icon-btn" aria-label="테마 전환" title="야간 다크모드 / 주간 라이트모드">
           <span class="theme-icon">🌙</span>
         </button>

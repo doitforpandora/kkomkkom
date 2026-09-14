@@ -796,6 +796,96 @@ themeBtn.addEventListener('click', () => {
   showToast(isDark ? '🌙 야간 다크모드 적용' : '☀️ 주간 라이트모드 적용');
 });
 
+// Security Lock Screen (PIN: 1212)
+const PASSCODE = '1212';
+let enteredPin = '';
+const lockScreen = document.getElementById('lockScreen');
+const pinDots = document.querySelectorAll('#pinDotsRow .pin-dot');
+const lockErrorMsg = document.getElementById('lockErrorMessage');
+const lockCard = document.querySelector('.lock-card');
+
+function updatePinDots() {
+  pinDots.forEach((dot, idx) => {
+    if (idx < enteredPin.length) {
+      dot.classList.add('filled');
+    } else {
+      dot.classList.remove('filled');
+    }
+  });
+}
+
+function handleKeyInput(num) {
+  if (enteredPin.length >= 4) return;
+  enteredPin += num;
+  updatePinDots();
+  lockErrorMsg.classList.add('hidden');
+
+  if (enteredPin.length === 4) {
+    validatePin();
+  }
+}
+
+function validatePin() {
+  if (enteredPin === PASSCODE) {
+    // Success
+    lockScreen.classList.add('unlocked');
+    sessionStorage.setItem('kkomkkom_authenticated', 'true');
+    showToast('🍼 꼼꼼이 가족 공간에 오신 것을 환영합니다!');
+    enteredPin = '';
+    updatePinDots();
+  } else {
+    // Error Shake
+    lockErrorMsg.classList.remove('hidden');
+    lockCard.classList.add('shake');
+    setTimeout(() => {
+      lockCard.classList.remove('shake');
+      enteredPin = '';
+      updatePinDots();
+    }, 500);
+  }
+}
+
+function deleteLastPin() {
+  if (enteredPin.length > 0) {
+    enteredPin = enteredPin.slice(0, -1);
+    updatePinDots();
+  }
+}
+
+function clearPin() {
+  enteredPin = '';
+  updatePinDots();
+  lockErrorMsg.classList.add('hidden');
+}
+
+// Keypad Event Listeners
+document.querySelectorAll('.keypad-btn[data-key]').forEach(btn => {
+  btn.addEventListener('click', () => handleKeyInput(btn.dataset.key));
+});
+
+document.getElementById('deletePinBtn').addEventListener('click', deleteLastPin);
+document.getElementById('clearPinBtn').addEventListener('click', clearPin);
+
+// Keyboard Support
+window.addEventListener('keydown', (e) => {
+  if (lockScreen.classList.contains('unlocked')) return;
+  if (e.key >= '0' && e.key <= '9') {
+    handleKeyInput(e.key);
+  } else if (e.key === 'Backspace') {
+    deleteLastPin();
+  } else if (e.key === 'Escape') {
+    clearPin();
+  }
+});
+
+// Re-lock Button in Header
+document.getElementById('lockAppBtn').addEventListener('click', () => {
+  sessionStorage.removeItem('kkomkkom_authenticated');
+  lockScreen.classList.remove('unlocked');
+  clearPin();
+  showToast('🔒 화면이 잠겼습니다.');
+});
+
 // Refresh Everything
 function refreshAll() {
   updateDashboard();
@@ -812,4 +902,13 @@ window.addEventListener('DOMContentLoaded', () => {
   document.getElementById('diaperTimeInput').value = curTime;
   setActiveUser(appState.activeUser || '엄마');
   refreshAll();
+
+  // Check Session Authentication
+  const isAuth = sessionStorage.getItem('kkomkkom_authenticated');
+  if (isAuth === 'true') {
+    lockScreen.classList.add('unlocked');
+  } else {
+    lockScreen.classList.remove('unlocked');
+  }
 });
+

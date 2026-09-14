@@ -1471,3 +1471,162 @@ body {
   from { opacity: 0; transform: translate(-50%, -10px); }
   to { opacity: 1; transform: translate(-50%, 0); }
 }
+
+/* 10. Security Lock Screen (PIN 1212) */
+.lock-screen-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: var(--bg-app);
+  backdrop-filter: blur(16px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  transition: opacity 0.35s ease, transform 0.35s ease;
+}
+
+.lock-screen-overlay.unlocked {
+  opacity: 0;
+  pointer-events: none;
+  transform: scale(1.04);
+}
+
+.lock-card {
+  width: 100%;
+  max-width: 360px;
+  padding: 32px 24px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+
+.lock-icon-wrap {
+  position: relative;
+  font-size: 44px;
+  margin-bottom: 12px;
+}
+
+.lock-baby-icon {
+  position: absolute;
+  bottom: -4px;
+  right: -10px;
+  font-size: 22px;
+}
+
+.lock-title {
+  font-size: 20px;
+  font-weight: 800;
+  font-family: var(--font-display);
+  letter-spacing: -0.5px;
+  margin-bottom: 6px;
+  background: linear-gradient(135deg, #fb923c, #f43f5e);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.lock-desc {
+  font-size: 13px;
+  color: var(--text-secondary);
+  margin-bottom: 24px;
+}
+
+/* PIN Dots */
+.pin-dots-row {
+  display: flex;
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+.pin-dot {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--bg-elevated);
+  border: 2px solid var(--border-color);
+  transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.pin-dot.filled {
+  background: var(--feed-color);
+  border-color: var(--feed-color);
+  transform: scale(1.2);
+  box-shadow: 0 0 10px rgba(249, 115, 22, 0.5);
+}
+
+.lock-error-msg {
+  color: #ef4444;
+  font-size: 12px;
+  font-weight: 700;
+  margin-bottom: 16px;
+  animation: shake 0.4s ease-in-out;
+}
+
+.lock-error-msg.hidden {
+  visibility: hidden;
+  margin-bottom: 16px;
+}
+
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  20%, 60% { transform: translateX(-8px); }
+  40%, 80% { transform: translateX(8px); }
+}
+
+.lock-card.shake .pin-dots-row {
+  animation: shake 0.4s ease-in-out;
+}
+
+/* Keypad Grid */
+.keypad-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 14px;
+  width: 100%;
+  max-width: 280px;
+  margin-bottom: 20px;
+}
+
+.keypad-btn {
+  height: 64px;
+  border-radius: 50%;
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  color: var(--text-primary);
+  font-size: 24px;
+  font-family: var(--font-display);
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-shadow: var(--shadow-sm);
+  transition: all 0.15s ease;
+  user-select: none;
+}
+
+.keypad-btn:hover {
+  background: var(--bg-elevated);
+  transform: scale(1.05);
+}
+
+.keypad-btn:active {
+  transform: scale(0.92);
+  background: var(--feed-color-subtle);
+  border-color: var(--feed-color);
+}
+
+.keypad-btn.action {
+  font-size: 18px;
+  background: var(--bg-elevated);
+  color: var(--text-secondary);
+}
+
+.lock-hint {
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
