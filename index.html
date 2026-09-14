@@ -72,6 +72,9 @@
             <button type="button" class="user-pill dad" data-user="아빠" id="selectDadBtn">👨 아빠</button>
           </div>
         </div>
+        <button id="settingsBtn" class="icon-btn" aria-label="환경설정" title="아기 정보 및 건강지표 설정">
+          <span>⚙️</span>
+        </button>
         <button id="lockAppBtn" class="icon-btn" aria-label="잠금" title="페이지 잠그기">
           <span>🔒</span>
         </button>
@@ -511,6 +514,122 @@
             <button type="submit" class="btn-confirm">공유하기</button>
           </div>
         </form>
+      </div>
+    </div>
+
+    <!-- 5. Settings & Health Standards Modal -->
+    <div id="settingsModal" class="modal-backdrop hidden">
+      <div class="modal-card modal-large">
+        <div class="modal-header">
+          <h3>⚙️ 환경설정 및 건강 가이드</h3>
+          <button class="close-modal-btn">&times;</button>
+        </div>
+
+        <!-- Settings Nav Tabs -->
+        <div class="segmented-control settings-tabs">
+          <button type="button" class="segment-btn active" data-tab="babyInfoTab">👶 아기 정보</button>
+          <button type="button" class="segment-btn" data-tab="healthGuideTab">🩺 기준 건강지표</button>
+          <button type="button" class="segment-btn" data-tab="securityTab">🔐 비밀코드</button>
+        </div>
+
+        <!-- Tab 1: Baby Info & Due Date -->
+        <div id="babyInfoTab" class="settings-tab-pane">
+          <form id="babyInfoForm" class="modal-form">
+            <div class="form-group">
+              <label class="form-label">현재 아기 상태</label>
+              <div class="status-choice-group">
+                <label class="choice-card">
+                  <input type="radio" name="babyBirthStatus" value="unborn" id="statusUnbornRadio" checked>
+                  <div class="choice-content">
+                    <span class="choice-icon">🤰</span>
+                    <span class="choice-title">아직 뱃속에 있어요</span>
+                    <span class="choice-sub">출산 예정일 카운트다운 (D-Day)</span>
+                  </div>
+                </label>
+                <label class="choice-card">
+                  <input type="radio" name="babyBirthStatus" value="born" id="statusBornRadio">
+                  <div class="choice-content">
+                    <span class="choice-icon">👶</span>
+                    <span class="choice-title">이미 태어났어요</span>
+                    <span class="choice-sub">생후 날짜 카운트 (D+일)</span>
+                  </div>
+                </label>
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">아기 태명 / 이름</label>
+              <input type="text" id="settingBabyName" class="text-input" value="꼼꼼이" placeholder="예: 꼼꼼이, 열무, 찰떡이" required>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label" id="dateInputLabel">출산 예정일</label>
+              <input type="date" id="settingBabyDate" class="time-input" required>
+              <span class="field-hint" id="dateCalculationHint">출산일까지 남은 일수가 메인 화면에 표시됩니다.</span>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">성별</label>
+              <div class="detail-chips" id="genderChips">
+                <span class="chip active" data-gender="secret">비밀 / 아직 몰라요 🤍</span>
+                <span class="chip" data-gender="boy">왕자님 👑</span>
+                <span class="chip" data-gender="girl">공주님 🎀</span>
+              </div>
+            </div>
+
+            <div class="modal-footer">
+              <button type="submit" class="btn-confirm" style="width:100%;">설정 저장하기</button>
+            </div>
+          </form>
+        </div>
+
+        <!-- Tab 2: Standard Health Guide -->
+        <div id="healthGuideTab" class="settings-tab-pane hidden">
+          <div class="health-guide-container">
+            <div class="guide-header-box">
+              <h4>🩺 소아청소년과 권장 월령별 표준 지표</h4>
+              <p>우리 아기가 잘 먹고 잘 자고 있는지 한눈에 비교해보세요.</p>
+            </div>
+
+            <!-- Age Selector Pills -->
+            <div class="guide-age-pills">
+              <button type="button" class="age-pill active" data-age="newborn">신생아 (0~1개월)</button>
+              <button type="button" class="age-pill" data-age="infant1">1~3개월</button>
+              <button type="button" class="age-pill" data-age="infant2">4~6개월</button>
+            </div>
+
+            <!-- Health Metric Cards for Selected Age -->
+            <div class="health-metrics-grid" id="healthMetricsGrid">
+              <!-- Dynamically populated based on age -->
+            </div>
+
+            <div class="doctor-tip-box">
+              <span class="tip-icon">💡</span>
+              <div class="tip-text">
+                <strong>소아과 전문의 필수 체크 TIP:</strong>
+                <p>아기의 탈수 여부는 <strong>소변 기저귀가 하루 6회 이상 묵직하게 나오는지</strong>로 가장 정확히 판단합니다. 수유량이 적더라도 기저귀 횟수가 충분하면 안심하세요!</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Tab 3: Security Passcode -->
+        <div id="securityTab" class="settings-tab-pane hidden">
+          <form id="passcodeForm" class="modal-form">
+            <div class="form-group">
+              <label class="form-label">현재 비밀코드</label>
+              <input type="password" id="currentPasscodeInput" class="num-input" maxlength="4" placeholder="기본: 1212" required>
+            </div>
+            <div class="form-group">
+              <label class="form-label">새로운 비밀코드 (4자리 숫자)</label>
+              <input type="password" id="newPasscodeInput" class="num-input" maxlength="4" placeholder="새 코드 4자리" required>
+            </div>
+            <div class="modal-footer">
+              <button type="submit" class="btn-confirm" style="width:100%;">비밀코드 변경</button>
+            </div>
+          </form>
+        </div>
+
       </div>
     </div>
 
